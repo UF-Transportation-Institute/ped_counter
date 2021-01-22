@@ -8,7 +8,7 @@ from geometry_msgs.msg import PoseArray
 from geodesy.utm import *
 
 from collections import namedtuple
-import time
+from datetime import datetime
 
 
 class Stat:
@@ -31,11 +31,14 @@ class PedCounter:
         return Geom.Point(self.detector_origin.x + point.x, self.detector_origin.y + point.y)
 
     def process_stats(self):
-        ts = time.time()
+        current_UTC_time = datetime.utcnow()
+        ts = "{}:{}:{}.{}".format(current_UTC_time.hour,
+                                  current_UTC_time.minute, current_UTC_time.second,
+                                  current_UTC_time.microsecond)
 
         # 8:2:7.100581^^^^1,{1:0,2:1,3:0,4:0,5:3,6:0}     Format of a message
-        stats = ['%s:%s' % (s.id,s.count) for s in self.stats]
-        mssg = '%s^^^^1,{%s}' % (ts, ', '.join(stats))
+        stats = ['%s:%s' % (s.id, s.count) for s in self.stats]
+        mssg = '%s^^^^1,{%s}' % (ts, ','.join(stats))
 
         print(mssg)
         # publish for out of band processing
