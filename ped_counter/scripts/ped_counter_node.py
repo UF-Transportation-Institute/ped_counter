@@ -51,7 +51,7 @@ class PedCounter:
                 stat_zone.count = stat_zone.count + 1
 
     def __init__(self):
-        self.pub = rospy.Publisher('counts', String, queue_size=30)
+        self.pub = rospy.Publisher('ped_counter/counts', String, queue_size=30)
         rospy.Subscriber('ped_detector/poses', PoseArray, self.callback)
 
         # init lidar origin
