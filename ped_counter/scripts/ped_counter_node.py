@@ -2,9 +2,15 @@
 
 ## Pedestrian counter that listens to geometry_msgs::PoseArray published
 ## to the 'poses' topic
+import math
+
 import rospy
+from genpy import Duration
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseArray
+from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker
+from visualization_msgs.msg import MarkerArray
 from geodesy.utm import *
 
 from collections import namedtuple
@@ -26,6 +32,68 @@ class PedCounter:
             self.update_stats(self.get_offset(pos.position))
 
         self.process_stats()
+        self.publish_boundary()
+
+
+    def publish_boundary(self):
+        markerArray = MarkerArray()
+
+        vmarkers_list = [[self.create_boundary_vertex(p) for p in s.polygon] for s in self.stats]
+        vmarkers = [item for sublist in vmarkers_list for item in sublist]
+
+        zone_markers_list = [self.create_boundary_zone(s.polygon) for s in self.stats]
+
+        markerArray.markers.extend(vmarkers)
+        markerArray.markers.extend(zone_markers_list)
+
+        # Renumber the marker IDs
+        id = 0
+        for m in markerArray.markers:
+            m.id = id
+            id += 1
+
+        # Publish the MarkerArray
+        self.pub_markers.publish(markerArray)
+
+    def create_boundary_vertex(self, pt):
+        marker = Marker()
+        marker.header.frame_id = "os1_lidar"
+        marker.ns = "zones";
+        marker.type = marker.SPHERE
+        marker.action = marker.ADD
+        marker.scale.x = 0.2
+        marker.scale.y = 0.2
+        marker.scale.z = 0.2
+        marker.color.a = 1.0
+        marker.color.r = 255.0
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        marker.pose.orientation.w = 1.0
+
+        marker.pose.position.x = pt.x - self.detector_origin.x
+        marker.pose.position.y = pt.y - self.detector_origin.y
+        marker.pose.position.z = 0.0
+
+        return marker
+
+    def create_boundary_zone(self, poly):
+        marker = Marker()
+        marker.header.frame_id = "os1_lidar"
+        marker.ns = "zones";
+        marker.type = marker.LINE_STRIP
+        marker.color.a = 1.0
+        marker.color.r = 50.0
+        marker.color.g = 200.0
+        marker.color.b = 100.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.02
+        fence = [Point( pt.x - self.detector_origin.x, pt.y - self.detector_origin.y, 0.0) for pt in poly]
+
+        marker.points.extend(fence)
+        #add the first point to close the line strip
+        marker.points.append(Point( poly[0].x - self.detector_origin.x, poly[0].y - self.detector_origin.y, 0.0))
+
+        return marker
 
     def get_offset(self, point):
         return Geom.Point(self.detector_origin.x + point.x, self.detector_origin.y + point.y)
@@ -55,6 +123,7 @@ class PedCounter:
 
     def __init__(self):
         self.pub = rospy.Publisher('ped_counter/counts', String, queue_size=30)
+        self.pub_markers = rospy.Publisher('ped_counter/zones', MarkerArray, queue_size=30)
         rospy.Subscriber('ped_detector/poses', PoseArray, self.callback)
 
         # init lidar origin
@@ -68,6 +137,7 @@ class PedCounter:
         for zone in detection_zone:
             polygon = [Geom.Point(u.easting, u.northing) for u in [fromLatLong(x, y) for x, y in zone['coords']]]
             self.stats.append(Stat(zone['id'], polygon))
+
 
 
 class Geom:
