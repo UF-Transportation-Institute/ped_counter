@@ -118,9 +118,10 @@ class PedCounter:
             stat_zone.count = 0
 
     def update_stats(self, point):
+        max_x, max_y = 6, 4
         for stat_zone in self.stats:
-            newPoint = Point(point.x,point.y,point.z)
-            if Geom.point_in_polygon(newPoint, stat_zone.polygon):
+            newPoint = Point(-1*point.x,point.y,point.z)
+            if newPoint.x^2 + newPoint.y^2 < max_x^2+max_y^2 and Geom.point_in_polygon(newPoint, stat_zone.polygon):
                 stat_zone.count = stat_zone.count + 1
                 print('found pedestrian at \n',newPoint)
 
