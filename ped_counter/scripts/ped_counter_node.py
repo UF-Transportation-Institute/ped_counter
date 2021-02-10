@@ -29,7 +29,8 @@ class PedCounter:
 
     def callback(self, data):
         for pos in data.poses:
-            self.update_stats(self.get_offset(pos.position))
+            #in local coord sys
+            self.update_stats(pos.position)
 
         self.process_stats()
         self.publish_boundary()
@@ -58,7 +59,7 @@ class PedCounter:
     def create_boundary_vertex(self, pt):
         marker = Marker()
         marker.header.frame_id = "os1_lidar"
-        marker.ns = "zones";
+        marker.ns = "zones"
         marker.type = marker.SPHERE
         marker.action = marker.ADD
         marker.scale.x = 0.2
@@ -70,8 +71,8 @@ class PedCounter:
         marker.color.b = 0.0
         marker.pose.orientation.w = 1.0
 
-        marker.pose.position.x = pt.x - self.detector_origin.x
-        marker.pose.position.y = pt.y - self.detector_origin.y
+        marker.pose.position.x = pt.x
+        marker.pose.position.y = pt.y
         marker.pose.position.z = 0.0
 
         return marker
@@ -87,11 +88,11 @@ class PedCounter:
         marker.color.b = 100.0
         marker.pose.orientation.w = 1.0
         marker.scale.x = 0.02
-        fence = [Point( pt.x - self.detector_origin.x, pt.y - self.detector_origin.y, 0.0) for pt in poly]
+        fence = [Point( pt.x, pt.y, 0.0) for pt in poly]
 
         marker.points.extend(fence)
         #add the first point to close the line strip
-        marker.points.append(Point( poly[0].x - self.detector_origin.x, poly[0].y - self.detector_origin.y, 0.0))
+        marker.points.append(Point( poly[0].x, poly[0].y, 0.0))
 
         return marker
 
@@ -134,8 +135,9 @@ class PedCounter:
         # init detection zones
         detection_zone = rospy.get_param("ped_counter_node/detection_zone")
         self.stats = []
+        # in local coord system
         for zone in detection_zone:
-            polygon = [Geom.Point(u.easting, u.northing) for u in [fromLatLong(x, y) for x, y in zone['coords']]]
+            polygon = [Geom.Point(x, y) for x, y in zone['coords']]
             self.stats.append(Stat(zone['id'], polygon))
 
 
