@@ -1,0 +1,17 @@
+<launch>
+
+	<include file="$(find ouster_ros)/os1.launch">
+		<arg name="os1_hostname" value="192.168.91.69" />
+		<arg name="os1_udp_dest" value="192.168.91.22"/>
+		<arg name="lidar_mode" value="2048x10"/>
+		<arg name="image" value="true"/>
+	</include>
+
+	<include file="$(find ped_detector)/launch/ped_detector.launch" />
+
+	<include file="$(find ped_counter)/launch/ped_counter.launch" />
+
+	<include file="$(find rio_integration)/launch/rio_integration.launch" />
+
+</launch>
+
