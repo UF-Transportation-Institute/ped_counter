@@ -119,8 +119,10 @@ class PedCounter:
 
     def update_stats(self, point):
         for stat_zone in self.stats:
-            if Geom.point_in_polygon(point, stat_zone.polygon):
+            newPoint = Point(point.x,point.y,point.z)
+            if Geom.point_in_polygon(newPoint, stat_zone.polygon):
                 stat_zone.count = stat_zone.count + 1
+                print('found pedestrian at \n',newPoint)
 
     def __init__(self):
         self.pub = rospy.Publisher('ped_counter/counts', String, queue_size=30)
